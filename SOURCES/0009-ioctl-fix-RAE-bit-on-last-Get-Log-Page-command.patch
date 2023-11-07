@@ -1,0 +1,49 @@
+From 777b52152f8137048b72edc12ad2ae998df4c30a Mon Sep 17 00:00:00 2001
+From: Caleb Sander <csander@purestorage.com>
+Date: Fri, 12 May 2023 09:43:22 -0600
+Subject: [PATCH] ioctl: fix RAE bit on last Get Log Page command
+Content-type: text/plain
+
+If nvme_get_log_page() requires multiple Get Log Page commands
+because the total log length exceeds the transfer length,
+args->rae is overwritten, causing the RAE bit to be set in all commands.
+Retrieve the value of args->rae before overwriting it
+so the RAE bit is set as requested in the last command.
+
+Fixes: c23dbd4 ("linux: Change nvme_get_log_page to use nvme_get_log_args parm")
+Signed-off-by: Caleb Sander <csander@purestorage.com>
+---
+ src/nvme/ioctl.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/src/nvme/ioctl.c b/src/nvme/ioctl.c
+index 6f9d724..b9710b3 100644
+--- a/src/nvme/ioctl.c
++++ b/src/nvme/ioctl.c
+@@ -434,7 +434,7 @@ int nvme_get_log_page(int fd, __u32 xfer_len, struct nvme_get_log_args *args)
+ {
+ 	__u64 offset = 0, xfer, data_len = args->len;
+ 	__u64 start = args->lpo;
+-	bool retain = true;
++	bool retain = args->rae;
+ 	void *ptr = args->log;
+ 	int ret;
+ 
+@@ -454,13 +454,10 @@ int nvme_get_log_page(int fd, __u32 xfer_len, struct nvme_get_log_args *args)
+ 		 * last portion of this log page so the data remains latched
+ 		 * during the fetch sequence.
+ 		 */
+-		if (offset + xfer == data_len)
+-			retain = args->rae;
+-
+ 		args->lpo = start + offset;
+ 		args->len = xfer;
+ 		args->log = ptr;
+-		args->rae = retain;
++		args->rae = offset + xfer < data_len || retain;
+ 		ret = nvme_get_log(args);
+ 		if (ret)
+ 			return ret;
+-- 
+2.39.3
+

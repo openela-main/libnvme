@@ -1,0 +1,25 @@
+From 1617d1a3f42a25a2e99073811174609abcffc34d Mon Sep 17 00:00:00 2001
+From: Tomas Bzatek <tbzatek@redhat.com>
+Date: Thu, 13 Apr 2023 18:27:39 +0200
+Subject: [PATCH] nbft: Parse the {HOSTID,HOSTNQN}_CONFIGURED flags
+
+---
+ src/nvme/nbft.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/nvme/nbft.c b/src/nvme/nbft.c
+index 940dd8e..c0af2b3 100644
+--- a/src/nvme/nbft.c
++++ b/src/nvme/nbft.c
+@@ -560,6 +560,8 @@ static int parse_raw_nbft(struct nbft_info *nbft)
+ 	nbft->host.id = (unsigned char *) &(host->host_id);
+ 	if (get_heap_obj(host, host_nqn_obj, 1, &nbft->host.nqn) != 0)
+ 		return -EINVAL;
++	nbft->host.host_id_configured = host->flags & NBFT_HOST_HOSTID_CONFIGURED;
++	nbft->host.host_nqn_configured = host->flags & NBFT_HOST_HOSTNQN_CONFIGURED;
+ 
+ 	/*
+ 	 * HFI
+-- 
+2.39.1
+

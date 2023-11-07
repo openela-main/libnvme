@@ -1,0 +1,64 @@
+From 961606f0d0547c3eebd47b79c363ab28c95a94ea Mon Sep 17 00:00:00 2001
+From: Martin Belanger <martin.belanger@dell.com>
+Date: Fri, 14 Apr 2023 11:19:23 -0400
+Subject: [PATCH] NBFT: Remove documentation from nbft.c since it's also in
+ nbft.h
+
+Also, replace nbft_free() by nvme_nbft_free() in documentation
+found in nbft.h.
+
+Signed-off-by: Martin Belanger <martin.belanger@dell.com>
+---
+ src/nvme/nbft.c | 15 ---------------
+ src/nvme/nbft.h |  2 +-
+ 2 files changed, 1 insertion(+), 16 deletions(-)
+
+diff --git a/src/nvme/nbft.c b/src/nvme/nbft.c
+index a085768..a1e17cd 100644
+--- a/src/nvme/nbft.c
++++ b/src/nvme/nbft.c
+@@ -626,10 +626,6 @@ static int parse_raw_nbft(struct nbft_info *nbft)
+ 	return 0;
+ }
+ 
+-/**
+- * nvme_nbft_free() - Free the struct nbft_info and its contents
+- * @nbft: Parsed NBFT table data.
+- */
+ void nvme_nbft_free(struct nbft_info *nbft)
+ {
+ 	struct nbft_info_hfi **hfi;
+@@ -656,17 +652,6 @@ void nvme_nbft_free(struct nbft_info *nbft)
+ 	free(nbft);
+ }
+ 
+-/**
+- * nvme_nbft_read() - Read and parse contents of an ACPI NBFT table
+- *
+- * @nbft:     Parsed NBFT table data.
+- * @filename: Filename of the raw NBFT table to read.
+- *
+- * Read and parse the specified NBFT file into a struct nbft_info.
+- * Free with nvme_nbft_free().
+- *
+- * Return: 0 on success, errno otherwise.
+- */
+ int nvme_nbft_read(struct nbft_info **nbft, const char *filename)
+ {
+ 	__u8 *raw_nbft = NULL;
+diff --git a/src/nvme/nbft.h b/src/nvme/nbft.h
+index c3caa85..6012e16 100644
+--- a/src/nvme/nbft.h
++++ b/src/nvme/nbft.h
+@@ -1223,7 +1223,7 @@ struct nbft_info {
+  * @filename: Filename of the raw NBFT table to read.
+  *
+  * Read and parse the specified NBFT file into a struct nbft_info.
+- * Free with nbft_free().
++ * Free with nvme_nbft_free().
+  *
+  * Return: 0 on success, errno otherwise.
+  */
+-- 
+2.39.1
+
