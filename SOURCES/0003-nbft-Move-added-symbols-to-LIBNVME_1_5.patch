@@ -1,0 +1,37 @@
+From 670ec98ebc986e62267145abb059b66ac5e51380 Mon Sep 17 00:00:00 2001
+From: Tomas Bzatek <tbzatek@redhat.com>
+Date: Thu, 13 Apr 2023 15:39:28 +0200
+Subject: [PATCH] nbft: Move added symbols to LIBNVME_1_5
+
+---
+ src/libnvme.map | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/src/libnvme.map b/src/libnvme.map
+index 6aa9fd0..28de595 100644
+--- a/src/libnvme.map
++++ b/src/libnvme.map
+@@ -1,5 +1,11 @@
+ # SPDX-License-Identifier: LGPL-2.1-or-later
+ 
++LIBNVME_1_5 {
++	global:
++		nvme_nbft_read;
++		nvme_nbft_free;
++};
++
+ LIBNVME_1_4 {
+ 	global:
+ 		nvme_lookup_keyring;
+@@ -7,8 +13,6 @@ LIBNVME_1_4 {
+ 		nvme_lookup_key;
+ 		nvme_set_keyring;
+ 		nvme_insert_tls_key;
+-		nvme_nbft_read;
+-		nvme_nbft_free;
+ };
+ 
+ LIBNVME_1_3 {
+-- 
+2.39.1
+

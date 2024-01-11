@@ -1,0 +1,105 @@
+From 4204cb3c79219926f750ede2d7e8b23a3852e72d Mon Sep 17 00:00:00 2001
+From: Caleb Sander <csander@purestorage.com>
+Date: Fri, 12 May 2023 10:49:46 -0600
+Subject: [PATCH] fabrics: check genctr after getting discovery entries
+Content-type: text/plain
+
+From the NVMe base spec (version 2.0c, section 5.16.1.23):
+If the host reads the Discovery Log Page using multiple Get Log Page
+commands the host should ensure that there has not been a change in the
+contents of the data. The host should read the Discovery Log Page
+contents in order (i.e., with increasing Log Page Offset values) and
+then re-read the Generation Counter after the entire log page is
+transferred. If the Generation Counter does not match the original value
+read, the host should discard the log page read as the entries may be
+inconsistent.
+
+nvme_get_log_page() will issue multiple Get Log Page commands
+to fetch the discovery log page if it exceeds 4 KB.
+Since GENCTR is at the start of the log page, this ordering is possible:
+- GENCTR is read by a Get Log Page command for the first 4 KB
+- The log page is modified, changing GENCTR
+- Other Get Log Page commands read the remainder of the log page
+So the check that GENCTR hasn't changed will incorrectly pass,
+despite the log page having been modified.
+This can lead to inconsistent, missing, or duplicate log page entries.
+
+Ensure a GENCTR update is not missed
+by fetching log page header again after all entries.
+
+Also use NVME_LOG_PAGE_PDU_SIZE to match other nvme_get_log_page() calls
+instead of hard-coding the 4 KB max transfer length.
+And ensure LPO is correctly reset if the log page is read again.
+
+Signed-off-by: Caleb Sander <csander@purestorage.com>
+---
+ src/nvme/fabrics.c | 32 ++++++++++++++++++++++++++------
+ 1 file changed, 26 insertions(+), 6 deletions(-)
+
+diff --git a/src/nvme/fabrics.c b/src/nvme/fabrics.c
+index 1762898..eaee29b 100644
+--- a/src/nvme/fabrics.c
++++ b/src/nvme/fabrics.c
+@@ -1036,9 +1036,10 @@ static struct nvmf_discovery_log *nvme_discovery_log(nvme_ctrl_t c,
+ 		nvme_msg(r, LOG_DEBUG, "%s: get header (try %d/%d)\n",
+ 			name, retries, max_retries);
+ 		args->rae = true;
++		args->lpo = 0;
+ 		args->len = size;
+ 		args->log = log;
+-		ret = nvme_get_log_page(fd, 4096, args);
++		ret = nvme_get_log_page(fd, NVME_LOG_PAGE_PDU_SIZE, args);
+ 		if (ret) {
+ 			nvme_msg(r, LOG_INFO,
+ 				 "%s: discover try %d/%d failed, error %d\n",
+@@ -1065,15 +1066,33 @@ static struct nvmf_discovery_log *nvme_discovery_log(nvme_ctrl_t c,
+ 		}
+ 
+ 		nvme_msg(r, LOG_DEBUG,
+-			 "%s: get header and %" PRIu64
++			 "%s: get %" PRIu64
+ 			 " records (length %d genctr %" PRIu64 ")\n",
+ 			 name, numrec, size, genctr);
+ 
++		args->rae = true;
++		args->lpo = sizeof(struct nvmf_discovery_log);
++		args->len = size - sizeof(struct nvmf_discovery_log);
++		args->log = log->entries;
++		ret = nvme_get_log_page(fd, NVME_LOG_PAGE_PDU_SIZE, args);
++		if (ret) {
++			nvme_msg(r, LOG_INFO,
++				 "%s: discover try %d/%d failed, error %d\n",
++				 name, retries, max_retries, errno);
++			goto out_free_log;
++		}
++
++		/*
++		 * If the log page was read with multiple Get Log Page commands,
++		 * genctr must be checked afterwards to ensure atomicity
++		 */
++		nvme_msg(r, LOG_DEBUG, "%s: get header again\n", name);
++
+ 		args->rae = false;
+-		args->len = size;
++		args->lpo = 0;
++		args->len = sizeof(struct nvmf_discovery_log);
+ 		args->log = log;
+-		ret = nvme_get_log_page(fd, 4096, args);
+-
++		ret = nvme_get_log_page(fd, NVME_LOG_PAGE_PDU_SIZE, args);
+ 		if (ret) {
+ 			nvme_msg(r, LOG_INFO,
+ 				 "%s: discover try %d/%d failed, error %d\n",
+@@ -1088,7 +1107,8 @@ static struct nvmf_discovery_log *nvme_discovery_log(nvme_ctrl_t c,
+ 		errno = EAGAIN;
+ 	} else if (numrec != le64_to_cpu(log->numrec)) {
+ 		nvme_msg(r, LOG_INFO,
+-			 "%s: could only fetch %" PRIu64 " of %" PRIu64 " records\n",
++			 "%s: numrec changed unexpectedly "
++			 "from %" PRIu64 " to %" PRIu64 "\n",
+ 			 name, numrec, le64_to_cpu(log->numrec));
+ 		errno = EBADSLT;
+ 	} else {
+-- 
+2.39.3
+

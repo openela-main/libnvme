@@ -1,0 +1,36 @@
+From 26e4343c2ba2db7a3c5696bbf61bb87942ac02bb Mon Sep 17 00:00:00 2001
+From: Tomas Bzatek <tbzatek@redhat.com>
+Date: Thu, 13 Apr 2023 17:28:42 +0200
+Subject: [PATCH] nbft: Fix nbft_ssns_flags endianness test
+
+Missing flags endianness conversion leading to ssns_ext_info
+not being parsed on s390x and armhf.
+---
+ src/nvme/nbft.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/nvme/nbft.c b/src/nvme/nbft.c
+index f91d21b..940dd8e 100644
+--- a/src/nvme/nbft.c
++++ b/src/nvme/nbft.c
+@@ -169,7 +169,7 @@ static int read_ssns_exended_info(struct nbft_info *nbft,
+ 	       "invalid ID in SSNS extended info descriptor");
+ 	verify(raw_ssns_ei->version == 1,
+ 	       "invalid version in SSNS extended info descriptor");
+-	verify(le16_to_cpu(raw_ssns_ei->ssns_index) == le16_to_cpu(ssns->index),
++	verify(le16_to_cpu(raw_ssns_ei->ssns_index) == ssns->index,
+ 	       "SSNS index doesn't match extended info descriptor index");
+ 
+ 	if (!(le32_to_cpu(raw_ssns_ei->flags) & NBFT_SSNS_EXT_INFO_VALID))
+@@ -292,7 +292,7 @@ static int read_ssns(struct nbft_info *nbft,
+ 		goto fail;
+ 
+ 	/* SSNS extended info */
+-	if (raw_ssns->flags & NBFT_SSNS_EXTENDED_INFO_IN_USE) {
++	if (le16_to_cpu(raw_ssns->flags) & NBFT_SSNS_EXTENDED_INFO_IN_USE) {
+ 		struct nbft_ssns_ext_info *ssns_extended_info;
+ 
+ 		if (!get_heap_obj(raw_ssns, ssns_extended_info_desc_obj, 0,
+-- 
+2.39.1
+

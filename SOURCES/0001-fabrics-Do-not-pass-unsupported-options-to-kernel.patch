@@ -1,5 +1,20 @@
+From d123131f2e542e5a4c046cb65a68fc1fb97ea384 Mon Sep 17 00:00:00 2001
+From: Daniel Wagner <dwagner@suse.de>
+Date: Wed, 12 Apr 2023 11:59:45 +0200
+Subject: [PATCH] fabrics: Do not pass unsupported options to kernel
+
+The kernel API might not support all options libnvme is supporting.
+Filter out all options which the kernel doesn't support.
+
+Signed-off-by: Daniel Wagner <dwagner@suse.de>
+---
+ src/nvme/fabrics.c | 216 ++++++++++++++++++++++++++++++++++++++-------
+ src/nvme/private.h |  33 +++++++
+ src/nvme/tree.c    |   1 +
+ 3 files changed, 220 insertions(+), 30 deletions(-)
+
 diff --git a/src/nvme/fabrics.c b/src/nvme/fabrics.c
-index a501f79..cb34283 100644
+index 3c32e27..f9c26fe 100644
 --- a/src/nvme/fabrics.c
 +++ b/src/nvme/fabrics.c
 @@ -30,6 +30,7 @@
@@ -10,7 +25,7 @@ index a501f79..cb34283 100644
  
  #include "fabrics.h"
  #include "linux.h"
-@@ -244,7 +245,7 @@ void nvmf_update_config(nvme_ctrl_t c, const struct nvme_fabrics_config *cfg)
+@@ -261,7 +262,7 @@ void nvmf_update_config(nvme_ctrl_t c, const struct nvme_fabrics_config *cfg)
  	UPDATE_CFG_OPTION(ctrl_cfg, cfg, tls, false);
  }
  
@@ -19,7 +34,7 @@ index a501f79..cb34283 100644
  {
  	char *nstr;
  
-@@ -260,7 +261,7 @@ static int add_bool_argument(char **argstr, char *tok, bool arg)
+@@ -277,7 +278,7 @@ static int add_bool_argument(char **argstr, char *tok, bool arg)
  	return 0;
  }
  
@@ -28,7 +43,7 @@ index a501f79..cb34283 100644
  {
  	char *nstr;
  
-@@ -276,7 +277,7 @@ static int add_int_argument(char **argstr, char *tok, int arg, bool allow_zero)
+@@ -293,7 +294,7 @@ static int add_int_argument(char **argstr, char *tok, int arg, bool allow_zero)
  	return 0;
  }
  
@@ -37,7 +52,7 @@ index a501f79..cb34283 100644
  {
  	char *nstr;
  
-@@ -292,7 +293,7 @@ static int add_int_or_minus_one_argument(char **argstr, char *tok, int arg)
+@@ -309,7 +310,7 @@ static int add_int_or_minus_one_argument(char **argstr, char *tok, int arg)
  	return 0;
  }
  
@@ -46,7 +61,7 @@ index a501f79..cb34283 100644
  {
  	char *nstr;
  
-@@ -308,6 +309,71 @@ static int add_argument(char **argstr, const char *tok, const char *arg)
+@@ -325,6 +326,71 @@ static int add_argument(char **argstr, const char *tok, const char *arg)
  	return 0;
  }
  
@@ -118,7 +133,7 @@ index a501f79..cb34283 100644
  static int inet4_pton(const char *src, uint16_t port,
  		      struct sockaddr_storage *addr)
  {
-@@ -436,6 +502,7 @@ static int build_options(nvme_host_t h, nvme_ctrl_t c, char **argstr)
+@@ -453,6 +519,7 @@ static int build_options(nvme_host_t h, nvme_ctrl_t c, char **argstr)
  	const char *transport = nvme_ctrl_get_transport(c);
  	const char *hostnqn, *hostid, *hostkey, *ctrlkey;
  	bool discover = false, discovery_nqn = false;
@@ -126,7 +141,7 @@ index a501f79..cb34283 100644
  
  	if (!transport) {
  		nvme_msg(h->r, LOG_ERR, "need a transport (-t) argument\n");
-@@ -469,57 +536,57 @@ static int build_options(nvme_host_t h, nvme_ctrl_t c, char **argstr)
+@@ -487,60 +554,60 @@ static int build_options(nvme_host_t h, nvme_ctrl_t c, char **argstr)
  	if (!hostkey)
  		hostkey = nvme_ctrl_get_dhchap_host_key(c);
  	ctrlkey = nvme_ctrl_get_dhchap_key(c);
@@ -189,8 +204,13 @@ index a501f79..cb34283 100644
  			      cfg->fast_io_fail_tmo, false)) ||
  	    (strcmp(transport, "loop") &&
 -	     add_int_argument(argstr, "tos", cfg->tos, true)) ||
--	    add_bool_argument(argstr, "duplicate_connect",
+-	    add_int_argument(argstr, "keyring", cfg->keyring, false) ||
 +	     add_int_argument(r, argstr, tos, cfg->tos, true)) ||
++	    add_int_argument(r, argstr, keyring, cfg->keyring, false) ||
+ 	    (!strcmp(transport, "tcp") &&
+-	     add_int_argument(argstr, "tls_key", cfg->tls_key, false)) ||
+-	    add_bool_argument(argstr, "duplicate_connect",
++	     add_int_argument(r, argstr, tls_key, cfg->tls_key, false)) ||
 +	    add_bool_argument(r, argstr, duplicate_connect,
  			      cfg->duplicate_connect) ||
 -	    add_bool_argument(argstr, "disable_sqflow",
@@ -208,7 +228,7 @@ index a501f79..cb34283 100644
  		free(*argstr);
  		return -1;
  	}
-@@ -527,6 +594,92 @@ static int build_options(nvme_host_t h, nvme_ctrl_t c, char **argstr)
+@@ -548,6 +615,92 @@ static int build_options(nvme_host_t h, nvme_ctrl_t c, char **argstr)
  	return 0;
  }
  
@@ -301,7 +321,7 @@ index a501f79..cb34283 100644
  static int __nvmf_add_ctrl(nvme_root_t r, const char *argstr)
  {
  	int ret, fd, len = strlen(argstr);
-@@ -647,6 +800,9 @@ int nvmf_add_ctrl(nvme_host_t h, nvme_ctrl_t c,
+@@ -671,6 +824,9 @@ int nvmf_add_ctrl(nvme_host_t h, nvme_ctrl_t c,
  		free(traddr);
  	}
  
@@ -312,11 +332,11 @@ index a501f79..cb34283 100644
  	if (ret)
  		return ret;
 diff --git a/src/nvme/private.h b/src/nvme/private.h
-index cdd1bbf..e7a6cd9 100644
+index a6ded21..47ce7ca 100644
 --- a/src/nvme/private.h
 +++ b/src/nvme/private.h
-@@ -116,6 +116,38 @@ struct nvme_host {
- 	char *hostsymname;
+@@ -120,6 +120,38 @@ struct nvme_host {
+ 				 * value */
  };
  
 +struct nvme_fabric_options {
@@ -354,19 +374,19 @@ index cdd1bbf..e7a6cd9 100644
  struct nvme_root {
  	char *config_file;
  	struct list_head hosts;
-@@ -125,6 +157,7 @@ struct nvme_root {
- 	bool log_pid;
+@@ -130,6 +162,7 @@ struct nvme_root {
  	bool log_timestamp;
  	bool modified;
+ 	bool mi_probe_enabled;
 +	struct nvme_fabric_options *options;
  };
  
  int nvme_set_attr(const char *dir, const char *attr, const char *value);
 diff --git a/src/nvme/tree.c b/src/nvme/tree.c
-index b992824..e7854c7 100644
+index 6b58483..c649408 100644
 --- a/src/nvme/tree.c
 +++ b/src/nvme/tree.c
-@@ -275,6 +275,7 @@ void nvme_free_tree(nvme_root_t r)
+@@ -288,6 +288,7 @@ void nvme_free_tree(nvme_root_t r)
  {
  	struct nvme_host *h, *_h;
  
@@ -374,3 +394,6 @@ index b992824..e7854c7 100644
  	nvme_for_each_host_safe(r, h, _h)
  		__nvme_free_host(h);
  	if (r->config_file)
+-- 
+2.31.1
+

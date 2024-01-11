@@ -3,21 +3,31 @@
 
 Name:    libnvme
 Summary: Linux-native nvme device management library
-Version: 1.2
-Release: 3%{?dist}
+Version: 1.4
+Release: 7%{?dist}
 License: LGPLv2+
 URL:     https://github.com/linux-nvme/libnvme
 Source0: %{url}/archive/v%{version_no_tilde}/%{name}-%{version_no_tilde}.tar.gz
 
-Patch0: 0001-fabrics-Fix-bad-UUID-size-introduced-in-recent-UUID-.patch
-Patch1: 0002-do-not-pass-unsupported-options.patch
+Patch0:  0001-fabrics-Do-not-pass-unsupported-options-to-kernel.patch
+Patch1:  0002-nbft-add-NBFT-v1.0-table-support.patch
+Patch2:  0003-nbft-Move-added-symbols-to-LIBNVME_1_5.patch
+Patch3:  0004-nbft-Fix-nbft_ssns_flags-endianness-test.patch
+Patch4:  0005-nbft-Parse-the-HOSTID-HOSTNQN-_CONFIGURED-flags.patch
+Patch5:  0006-nbft-Doc-typo-Use-nvme_nbft_free-instead-of-nbft_fre.patch
+Patch6:  0007-NBFT-Remove-documentation-from-nbft.c-since-it-s-als.patch
+Patch7:  0008-fabrics-check-genctr-after-getting-discovery-entries.patch
+Patch8:  0009-ioctl-fix-RAE-bit-on-last-Get-Log-Page-command.patch
 
 BuildRequires: gcc gcc-c++
 BuildRequires: swig
 BuildRequires: python3-devel
-BuildRequires: meson >= 0.48.0
+BuildRequires: meson >= 0.50.0
 BuildRequires: json-c-devel >= 0.13
 BuildRequires: openssl-devel
+BuildRequires: keyutils-libs-devel
+
+Requires: keyutils-libs
 
 %description
 Provides type definitions for NVMe specification structures,
@@ -46,7 +56,6 @@ This package contains the reference manual for %{name}.
 Summary:  Python3 bindings for libnvme
 Requires: %{name}%{?_isa} = %{version}-%{release}
 Provides:  python3-nvme = %{version}-%{release}
-Obsoletes: python3-nvme < 1.0~rc7
 %{?python_provide:%python_provide python3-libnvme}
 
 %description -n python3-libnvme
@@ -56,7 +65,7 @@ This package contains Python bindings for libnvme.
 %autosetup -p1 -n %{name}-%{version_no_tilde}
 
 %build
-%meson -Dpython=true -Ddocs=all -Ddocs-build=true -Dhtmldir=%{_pkgdocdir}
+%meson -Dpython=enabled -Dlibdbus=disabled -Ddocs=all -Ddocs-build=true -Dhtmldir=%{_pkgdocdir}
 %meson_build
 
 %install
@@ -72,9 +81,9 @@ mv %{buildroot}/usr/*.rst %{buildroot}%{_pkgdocdir}/
 %files
 %license COPYING ccan/licenses/*
 %{_libdir}/libnvme.so.1
-%{_libdir}/libnvme.so.1.2.0
+%{_libdir}/libnvme.so.1.4.0
 %{_libdir}/libnvme-mi.so.1
-%{_libdir}/libnvme-mi.so.1.2.0
+%{_libdir}/libnvme-mi.so.1.4.0
 
 %files devel
 %{_libdir}/libnvme.so
@@ -94,8 +103,26 @@ mv %{buildroot}/usr/*.rst %{buildroot}%{_pkgdocdir}/
 %{python3_sitearch}/libnvme/*
 
 %changelog
-* Tue Jun 27 2023 Maurizio Lombardi <mlombard@redhat.com> - 1.2-3
-- Do not pass unsupported options to the kernel (Fix 2207678)
+* Mon Jul 17 2023 John Meneghini <jmeneghi@redhat.com> - 1.4-7
+- Fix BZ#2223429
+
+* Mon Jun 05 2023 Maurizio Lombardi <mlombard@redhat.com> - 1.4-6
+- Rebuild for BZ2212307
+
+* Tue May 16 2023 Maurizio Lombardi <mlombard@redhat.com> - 1.4-5
+- Add support to NBFT (BZ2188516)
+
+* Mon May 08 2023 Maurizio Lombardi <mlombard@redhat.com> - 1.4-4
+- Fix BZ#2190206
+
+* Fri May 05 2023 Maurizio Lombardi <mlombard@redhat.com> - 1.4-3
+- Fix Jira RHEL-258
+
+* Thu Apr 06 2023 Maurizio Lombardi <mlombard@redhat.com> - 1.4-2
+- Rebuild the package
+
+* Mon Apr 03 2023 Maurizio Lombardi <mlombard@redhat.com> - 1.4-1
+- Update to version 1.4
 
 * Thu Jan 12 2023 John Meneghini <jmeneghi@redhat.com> - 1.2-2
 - Fix BZ2158264
