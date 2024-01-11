@@ -1,0 +1,33 @@
+From 78ce3528d00bb433c661fd24672a1b5c6795b59f Mon Sep 17 00:00:00 2001
+From: Martin Belanger <martin.belanger@dell.com>
+Date: Fri, 18 Nov 2022 10:41:32 -0500
+Subject: [PATCH] fabrics: Fix bad UUID size introduced in recent UUID changes
+Content-type: text/plain
+
+71c25d1cf741 ("util: Add simple UUID type") introduced a regression in
+nvmf_get_tel(). nvmf_get_tel() returns the lenght of the binary
+representation. Hence use NVME_UUID_LEN instead.
+
+Signed-off-by: Martin Belanger <martin.belanger@dell.com>
+[dwagner: massaged commit message]
+Signed-off-by: Daniel Wagner <dwagner@suse.de>
+---
+ src/nvme/fabrics.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/nvme/fabrics.c b/src/nvme/fabrics.c
+index f943090..36bdc2d 100644
+--- a/src/nvme/fabrics.c
++++ b/src/nvme/fabrics.c
+@@ -1127,7 +1127,7 @@ static __u32 nvmf_get_tel(const char *hostsymname)
+ 	__u16 len;
+ 
+ 	/* Host ID is mandatory */
+-	tel += nvmf_exat_size(NVME_UUID_LEN_STRING);
++	tel += nvmf_exat_size(NVME_UUID_LEN);
+ 
+ 	/* Symbolic name is optional */
+ 	len = hostsymname ? strlen(hostsymname) : 0;
+-- 
+2.31.1
+
