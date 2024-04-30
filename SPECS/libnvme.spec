@@ -3,21 +3,16 @@
 
 Name:    libnvme
 Summary: Linux-native nvme device management library
-Version: 1.4
-Release: 7%{?dist}
-License: LGPLv2+
+Version: 1.6
+Release: 1%{?dist}
+License: LGPL-2.1-or-later
 URL:     https://github.com/linux-nvme/libnvme
 Source0: %{url}/archive/v%{version_no_tilde}/%{name}-%{version_no_tilde}.tar.gz
 
-Patch0:  0001-fabrics-Do-not-pass-unsupported-options-to-kernel.patch
-Patch1:  0002-nbft-add-NBFT-v1.0-table-support.patch
-Patch2:  0003-nbft-Move-added-symbols-to-LIBNVME_1_5.patch
-Patch3:  0004-nbft-Fix-nbft_ssns_flags-endianness-test.patch
-Patch4:  0005-nbft-Parse-the-HOSTID-HOSTNQN-_CONFIGURED-flags.patch
-Patch5:  0006-nbft-Doc-typo-Use-nvme_nbft_free-instead-of-nbft_fre.patch
-Patch6:  0007-NBFT-Remove-documentation-from-nbft.c-since-it-s-als.patch
-Patch7:  0008-fabrics-check-genctr-after-getting-discovery-entries.patch
-Patch8:  0009-ioctl-fix-RAE-bit-on-last-Get-Log-Page-command.patch
+Patch0:  0001-util-Introduce-alloc-helper-with-alignment-support.patch
+Patch1:  0002-tree-Allocate-aligned-payloads-for-ns-scan.patch
+Patch2:  0003-linux-Allocate-aligned-payloads-for-id_ctrl-and-id_n.patch
+Patch3:  0004-fabrics-Allocate-aligned-payloads-for-id_ctrl-and-di.patch
 
 BuildRequires: gcc gcc-c++
 BuildRequires: swig
@@ -81,9 +76,9 @@ mv %{buildroot}/usr/*.rst %{buildroot}%{_pkgdocdir}/
 %files
 %license COPYING ccan/licenses/*
 %{_libdir}/libnvme.so.1
-%{_libdir}/libnvme.so.1.4.0
+%{_libdir}/libnvme.so.1.6.0
 %{_libdir}/libnvme-mi.so.1
-%{_libdir}/libnvme-mi.so.1.4.0
+%{_libdir}/libnvme-mi.so.1.6.0
 
 %files devel
 %{_libdir}/libnvme.so
@@ -103,6 +98,9 @@ mv %{buildroot}/usr/*.rst %{buildroot}%{_pkgdocdir}/
 %{python3_sitearch}/libnvme/*
 
 %changelog
+* Fri Nov 03 2023 Maurizio Lombardi <mlombard@redhat.com> - 1.6-1
+- Update to version 1.6, including the stack-smashing fixes
+
 * Mon Jul 17 2023 John Meneghini <jmeneghi@redhat.com> - 1.4-7
 - Fix BZ#2223429
 
