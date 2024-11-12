@@ -1,0 +1,32 @@
+From 49a4cd8f62d05bb4e1b6e1365bad638c366cdba9 Mon Sep 17 00:00:00 2001
+From: Greg Joyce <gjoyce@linux.ibm.com>
+Date: Tue, 23 Jul 2024 01:04:42 +0530
+Subject: [PATCH] tree: handle no address phy slot dirs
+
+Not all directories have an address. Verify addr before calling
+strcmp().
+
+Fixes: 42ac45359635 ("tree: Add PCI physical slot number for controller")
+Signed-off-by: Greg Joyce <gjoyce@linux.ibm.com>
+---
+ src/nvme/tree.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/nvme/tree.c b/src/nvme/tree.c
+index 288b23c73a1b..b0ee94047634 100644
+--- a/src/nvme/tree.c
++++ b/src/nvme/tree.c
+@@ -1867,6 +1867,10 @@ static char *nvme_ctrl_lookup_phy_slot(nvme_root_t r, const char *address)
+ 				return NULL;
+ 			}
+ 			addr = nvme_get_attr(path, "address");
++
++			/* some directories don't have an address entry */
++			if (!addr)
++				continue;
+ 			if (strcmp(addr, target_addr) == 0)
+ 				return strdup(entry->d_name);
+ 		}
+-- 
+2.43.0
+

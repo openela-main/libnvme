@@ -3,16 +3,15 @@
 
 Name:    libnvme
 Summary: Linux-native nvme device management library
-Version: 1.6
-Release: 1%{?dist}
+Version: 1.9
+Release: 3%{?dist}
 License: LGPL-2.1-or-later
 URL:     https://github.com/linux-nvme/libnvme
 Source0: %{url}/archive/v%{version_no_tilde}/%{name}-%{version_no_tilde}.tar.gz
 
-Patch0:  0001-util-Introduce-alloc-helper-with-alignment-support.patch
-Patch1:  0002-tree-Allocate-aligned-payloads-for-ns-scan.patch
-Patch2:  0003-linux-Allocate-aligned-payloads-for-id_ctrl-and-id_n.patch
-Patch3:  0004-fabrics-Allocate-aligned-payloads-for-id_ctrl-and-di.patch
+# https://issues.redhat.com/browse/RHEL-37608
+Patch0:  libnvme-1.10-uriparser.patch
+Patch1:  0001-tree-handle-no-address-phy-slot-dirs.patch
 
 BuildRequires: gcc gcc-c++
 BuildRequires: swig
@@ -76,9 +75,9 @@ mv %{buildroot}/usr/*.rst %{buildroot}%{_pkgdocdir}/
 %files
 %license COPYING ccan/licenses/*
 %{_libdir}/libnvme.so.1
-%{_libdir}/libnvme.so.1.6.0
+%{_libdir}/libnvme.so.1.9.0
 %{_libdir}/libnvme-mi.so.1
-%{_libdir}/libnvme-mi.so.1.6.0
+%{_libdir}/libnvme-mi.so.1.9.0
 
 %files devel
 %{_libdir}/libnvme.so
@@ -98,6 +97,18 @@ mv %{buildroot}/usr/*.rst %{buildroot}%{_pkgdocdir}/
 %{python3_sitearch}/libnvme/*
 
 %changelog
+* Thu Aug 01 2024 Maurizio Lombardi <mlombard@redhat.com> - 1.9-3
+- Backport fix for RHEL-49544
+
+* Wed Jul 24 2024 Tomas Bzatek <tbzatek@redhat.com> - 1.9-2
+- Backport URI parser API
+
+* Tue May 07 2024 Maurizio Lombardi <mlombard@redhat.com> - 1.9-1
+- Rebase to version 1.9
+
+* Tue Apr 02 2024 Maurizio Lombardi <mlombard@redhat.com> - 1.8-1
+- Update to version 1.8
+
 * Fri Nov 03 2023 Maurizio Lombardi <mlombard@redhat.com> - 1.6-1
 - Update to version 1.6, including the stack-smashing fixes
 
