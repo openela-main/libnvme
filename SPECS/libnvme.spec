@@ -3,11 +3,12 @@
 
 Name:    libnvme
 Summary: Linux-native nvme device management library
-Version: 1.13
-Release: 1%{?dist}
+Version: 1.16.1
+Release: 3%{?dist}
 License: LGPL-2.1-or-later
 URL:     https://github.com/linux-nvme/libnvme
 Source0: %{url}/archive/v%{version_no_tilde}/%{name}-%{version_no_tilde}.tar.gz
+Patch0:  0001-tree-cleanup-paths-when-freeing-namespace.patch
 
 BuildRequires: gcc gcc-c++
 BuildRequires: swig
@@ -76,9 +77,9 @@ rm -r %{buildroot}%{_pkgdocdir}/html/{.buildinfo,.doctrees/}
 %files
 %license COPYING ccan/licenses/*
 %{_libdir}/libnvme.so.1
-%{_libdir}/libnvme.so.1.13.0
+%{_libdir}/libnvme.so.1.16.1
 %{_libdir}/libnvme-mi.so.1
-%{_libdir}/libnvme-mi.so.1.13.0
+%{_libdir}/libnvme-mi.so.1.16.1
 
 %files devel
 %{_libdir}/libnvme.so
@@ -98,6 +99,24 @@ rm -r %{buildroot}%{_pkgdocdir}/html/{.buildinfo,.doctrees/}
 %{python3_sitearch}/libnvme/*
 
 %changelog
+* Fri Mar 27 2026 Maurizio Lombardi <mlombard@redhat.com> - 1.16.1-3
+- Fix linked list corruption (RHEL-156539)
+
+* Wed Nov 19 2025 Maurizio Lombardi <mlombard@redhat.com> - 1.16.1-2
+- Fix gating tests for RHEL-127740
+
+* Wed Nov 12 2025 Maurizio Lombardi <mlombard@redhat.com> - 1.16.1-1
+- Rebase to version 1.16.1 (RHEL-127740)
+
+* Fri Sep 26 2025 Maurizio Lombardi <mlombard@redhat.com> - 1.15-3
+- Add a fix for a NULL pointer dereference regression
+
+* Mon Sep 08 2025 Maurizio Lombardi <mlombard@redhat.com> - 1.15-2
+- bump version because the side-tag didn't propagate
+
+* Thu Sep 04 2025 Maurizio Lombardi <mlombard@redhat.com> - 1.15-1
+- Update to version 1.15 (RHEL-113070)
+
 * Mon May 12 2025 Maurizio Lombardi <mlombard@redhat.com> - 1.13-1
 - Update to version 1.13 (RHEL-90418)
 
