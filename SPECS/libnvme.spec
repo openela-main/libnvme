@@ -3,8 +3,8 @@
 
 Name:    libnvme
 Summary: Linux-native nvme device management library
-Version: 1.16.1
-Release: 3%{?dist}
+Version: 1.16.2
+Release: 1%{?dist}
 License: LGPL-2.1-or-later
 URL:     https://github.com/linux-nvme/libnvme
 Source0: %{url}/archive/v%{version_no_tilde}/%{name}-%{version_no_tilde}.tar.gz
@@ -72,9 +72,9 @@ mv %{buildroot}/usr/*.rst %{buildroot}%{_pkgdocdir}/
 %files
 %license COPYING ccan/licenses/*
 %{_libdir}/libnvme.so.1
-%{_libdir}/libnvme.so.1.16.1
+%{_libdir}/libnvme.so.1.16.2
 %{_libdir}/libnvme-mi.so.1
-%{_libdir}/libnvme-mi.so.1.16.1
+%{_libdir}/libnvme-mi.so.1.16.2
 
 %files devel
 %{_libdir}/libnvme.so
@@ -94,6 +94,12 @@ mv %{buildroot}/usr/*.rst %{buildroot}%{_pkgdocdir}/
 %{python3_sitearch}/libnvme/*
 
 %changelog
+* Thu Jul 16 2026 Utkarsh Singh <utsingh@redhat.com> - 1.16.2-1
+- Update libnvme to version 1.16.2 (RHEL-208912)
+
+* Wed Jul 01 2026 Utkarsh Singh <utsingh@redhat.com> - 1.16.1-4
+- Fix potential NULL pointer dereference in nvme_host_get_ids (RHEL-191160)
+
 * Wed Mar 11 2026 Maurizio Lombardi <mlombard@redhat.com> - 1.16.1-3
 - Fix linked list corruption RHEL-146273
 
